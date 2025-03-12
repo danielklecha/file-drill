@@ -1,0 +1,17 @@
+{
+  "WritableOptions": {
+    "FallbackAIService": null,
+    "ContentReader": {
+      "AIService": null,
+      "AttachProperties": false
+    },
+    "ContentClassifier": {
+      "AIService": null
+    },
+    "FieldExtractor": {
+      "AIService": null
+    },
+    "AIServices": {
+    }
+  }
+}

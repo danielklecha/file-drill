@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "FileDrill": {
+      "commandName": "Project",
+      "commandLineArgs": ""
+    }
+  }
+}
