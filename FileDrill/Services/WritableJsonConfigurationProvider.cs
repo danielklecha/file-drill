@@ -50,7 +50,8 @@ public class WritableJsonConfigurationProvider : JsonConfigurationProvider, IWri
 
     public async Task SaveAsync(CancellationToken cancelationToken)
     {
-        string json = JsonSerializer.Serialize(GetUnflattened(Data), new JsonSerializerOptions() { WriteIndented = true });
+        JsonSerializerOptions jsonSerializerOptions = new() { WriteIndented = true };
+        string json = JsonSerializer.Serialize(GetUnflattened(Data), jsonSerializerOptions);
         string? root = (Source.FileProvider as PhysicalFileProvider)?.Root;
         if (Source.Path == null)
             throw new Exception("Source settings for this provider are null");

@@ -44,10 +44,7 @@ internal class ConfigSetKeyCommand : Command
                 {
                     using FileSystemStream stream = fileSystem.File.OpenRead(Value);
                     using JsonDocument jsonDocument = JsonDocument.Parse(stream);
-                    //using var emptyJsonDocument = JsonDocument.Parse("null");
                     using var nestedJsonDocument = jsonDocument.ToNestedJsonDocument(Key);
-                    //using var emptyNestedJsonDocument = emptyJsonDocument.ToNestedJsonDocument(Key);
-                    //optionsSync.Bind(optionsValue, emptyNestedJsonDocument);
                     optionsSync.Bind(optionsValue, nestedJsonDocument);
                 }
                 catch (Exception ex)

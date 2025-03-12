@@ -5,6 +5,7 @@ using System.CommandLine.Invocation;
 using System.CommandLine;
 using System.IO.Abstractions;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace FileDrill.Commands;
 internal class ConfigSetCommand : Command
@@ -33,7 +34,11 @@ internal class ConfigSetCommand : Command
                 try
                 {
                     using FileSystemStream stream = fileSystem.File.OpenRead(Json);
-                    var newOptions = JsonSerializer.Deserialize<WritableOptions>(stream) ?? throw new Exception("New options are null");
+                    JsonSerializerOptions jsonSerializerOptions = new()
+                    {
+                        Converters = { new JsonStringEnumConverter(JsonNamingPolicy.CamelCase) }
+                    };
+                    var newOptions = JsonSerializer.Deserialize<WritableOptions>(stream, jsonSerializerOptions) ?? throw new Exception("New options are null");
                     await optionsSync.SyncAsync(newOptions);
                     await optionsSync.SaveAsync();
                     logger.LogInformation("Options were updated");
