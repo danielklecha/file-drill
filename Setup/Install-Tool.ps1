@@ -9,7 +9,7 @@ try {
     dotnet pack --no-build --configuration Release FileDrill.sln
 
     Write-Host "Installing the tool globally..." -ForegroundColor Cyan
-    dotnet tool update --global --add-source .\FileDrill\bin\Release --no-cache FileDrill
+    dotnet tool update --global --add-source .\FileDrill\bin\Release --no-cache file-drill
 
     Write-Host "Installation complete!" -ForegroundColor Green
     Read-Host -Prompt "Press Enter to exit..."

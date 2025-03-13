@@ -10,6 +10,12 @@ File-drill tool can:
 - classify content using AI
 - extract fields using AI
 
+## Installation
+
+```powershell
+dotnet tool install --global file-drill
+```
+
 ## Configuration
 
 ```powershell
