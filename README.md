@@ -16,14 +16,13 @@ File-drill tool can:
 dotnet tool install --global file-drill
 ```
 
-## Configuration
+## Commands
 
-```powershell
-file-drill config set .\config.json
-file-drill read classify extract c:\invoice.pdf
-```
+- `file-drill config set .\config.json` - sets configuration
+- `file-drill config set .\config.json` - loads samples
+- `file-drill read classify extract c:\invoice.pdf` - reads, classifies, extact
 
-Sample configuration file:
+## Sample configuration file
 
 ```json
 {
@@ -34,6 +33,15 @@ Sample configuration file:
       "Url": "http://localhost:11434",
       "ModelName": "llama3.1:latest"
       }
+  },
+  "Invoice": {
+    "Description": "an invoice, also known as a bill or sales",
+    "Fields": {
+      "invoice number": {
+          "Description": "The number of the invoice",
+          "Type": "String"
+      },
+    }
   }
 }
 ```
@@ -47,3 +55,11 @@ Sample configuration file:
 | docx, dotx, docm, dotm | DocumentFormat.OpenXml |
 | png, jpeg | OCR using AI service |
 | rtf | RtfPipe |
+
+## Supported AI services
+| Service | Library |
+|---|---|
+| Ollama | Microsoft.Extensions.AI.Ollama |
+| Azure | Microsoft.Extensions.AI.AzureAIInference |
+| OpenAI | Microsoft.Extensions.AI.OpenAI |
+| Google | Mscc.GenerativeAI.Microsoft |

@@ -8,10 +8,9 @@ using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
-using System.Xml.Linq;
 
 namespace FileDrill.Services;
-public class FieldExtractorService(
+public partial class FieldExtractorService(
     IChatClientFactory chatClientFactory,
     IOptions<WritableOptions> options,
     ILogger<FieldExtractorService> logger) : IFieldExtractorService
@@ -126,15 +125,15 @@ public class FieldExtractorService(
         sb.AppendLine(content);
         try
         {
-            var response = await chatClient.CompleteAsync(sb.ToString(), new ChatOptions
+            var response = await chatClient.GetResponseAsync(sb.ToString(), new ChatOptions
             {
                 ResponseFormat = ChatResponseFormat.Json
             }, cancellationToken);
             logger.LogDebug("Input token count: {InputTokenCount}", response.Usage?.InputTokenCount);
             logger.LogDebug("Output token count: {OutputTokenCount}", response.Usage?.OutputTokenCount);
-            if (string.IsNullOrEmpty(response.Message.Text))
+            if (string.IsNullOrEmpty(response.Text))
                 return null;
-            var responseMessage = Regex.Replace(response.Message.Text, @"^\s*```json\s*|\s*```\s*$", string.Empty, RegexOptions.None, TimeSpan.FromMilliseconds(300));
+            var responseMessage = Regex.Replace(response.Text, @"^\s*```json\s*|\s*```\s*$", string.Empty, RegexOptions.None, TimeSpan.FromMilliseconds(300));
             var jsonDocument = JsonDocument.Parse(responseMessage);
             var result = new Dictionary<string, object?>();
             foreach (var fieldKey in fieldKeys)
@@ -223,6 +222,9 @@ public class FieldExtractorService(
 
     private static string TrimNumber(string input)
     {
-        return Regex.Replace(input, @"^[^0-9,.-]+|[^0-9,.]+$", string.Empty);
+        return TrimNumberRegex().Replace(input, string.Empty);
     }
+
+    [GeneratedRegex(@"^[^0-9,.-]+|[^0-9,.]+$")]
+    private static partial Regex TrimNumberRegex();
 }

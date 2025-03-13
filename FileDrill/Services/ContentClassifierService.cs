@@ -45,18 +45,18 @@ public class ContentClassifierService(
         sb.AppendLine(content);
         try
         {
-            var response = await chatClient.CompleteAsync(sb.ToString(), new ChatOptions
+            var response = await chatClient.GetResponseAsync(sb.ToString(), new ChatOptions
             {
                 ResponseFormat = ChatResponseFormat.Json
             }, cancellationToken: cancellationToken);
             logger.LogDebug("Input token count: {InputTokenCount}", response.Usage?.InputTokenCount);
             logger.LogDebug("Output token count: {OutputTokenCount}", response.Usage?.OutputTokenCount);
-            if (string.IsNullOrEmpty(response.Message.Text))
+            if (string.IsNullOrEmpty(response.Text))
             {
                 logger.LogError("Response is empty");
                 return null;
             }
-            var responseMessage = Regex.Replace(response.Message.Text, @"^\s*```json\s*|\s*```\s*$", string.Empty, RegexOptions.None, TimeSpan.FromMilliseconds(300));
+            var responseMessage = Regex.Replace(response.Text, @"^\s*```json\s*|\s*```\s*$", string.Empty, RegexOptions.None, TimeSpan.FromMilliseconds(300));
             var jsonDocument = JsonDocument.Parse(responseMessage);
             var result = jsonDocument.RootElement.GetProperty("Result").GetString();
             if (jsonDocument.RootElement.TryGetProperty("Explanation", out JsonElement explanationJsonElement))
@@ -119,23 +119,22 @@ public class ContentClassifierService(
         sb.AppendLine("- ConfidenceScore should be an integer between 0 and 100.");
         try
         {
-            List<AIContent> aiContents = [new TextContent(sb.ToString())];
-            if (mimeType.StartsWith("image/", StringComparison.OrdinalIgnoreCase))
-                aiContents.Add(new ImageContent(dataUrl, mimeType));
-            else
-                aiContents.Add(new DataContent(dataUrl, mimeType));
-            var response = await chatClient.CompleteAsync([new(ChatRole.User, aiContents)], new ChatOptions
+            List<AIContent> aiContents = [
+                new TextContent(sb.ToString()),
+                new DataContent(dataUrl, mimeType)
+            ];
+            var response = await chatClient.GetResponseAsync([new(ChatRole.User, aiContents)], new ChatOptions
             {
                 ResponseFormat = ChatResponseFormat.Json
             },  cancellationToken: cancellationToken);
             logger.LogDebug("Input token count: {InputTokenCount}", response.Usage?.InputTokenCount);
             logger.LogDebug("Output token count: {OutputTokenCount}", response.Usage?.OutputTokenCount);
-            if (string.IsNullOrEmpty(response.Message.Text))
+            if (string.IsNullOrEmpty(response.Text))
             {
                 logger.LogError("Response is empty");
                 return null;
             }
-            var responseMessage = Regex.Replace(response.Message.Text, @"^\s*```json\s*|\s*```\s*$", string.Empty, RegexOptions.None, TimeSpan.FromMilliseconds(300));
+            var responseMessage = Regex.Replace(response.Text, @"^\s*```json\s*|\s*```\s*$", string.Empty, RegexOptions.None, TimeSpan.FromMilliseconds(300));
             var jsonDocument = JsonDocument.Parse(responseMessage);
             var result = jsonDocument.RootElement.GetProperty("Result").GetString();
             if (jsonDocument.RootElement.TryGetProperty("Explanation", out JsonElement explanationJsonElement))

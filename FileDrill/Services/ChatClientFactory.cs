@@ -3,10 +3,6 @@ using Azure.AI.Inference;
 using Azure;
 using Microsoft.Extensions.AI;
 using OllamaSharp;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using Mscc.GenerativeAI.Microsoft;
 using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Logging;
@@ -21,8 +17,8 @@ public class ChatClientFactory(
     {
         if (string.IsNullOrWhiteSpace(serviceName))
             serviceName = options.Value.FallbackAIService ?? throw new Exception("FallbackAIService is not set");
-        if (!options.Value.AIServices.TryGetValue(serviceName, out var chatClientOptions))
-            throw new ArgumentNullException(nameof(serviceName));
+        if (!(options.Value.AIServices?.TryGetValue(serviceName, out var chatClientOptions) ?? false))
+            throw new Exception($"Unable to find {serviceName}");
         logger.LogDebug("{name} AI service was used", serviceName);
         return chatClientOptions.Type switch
         {

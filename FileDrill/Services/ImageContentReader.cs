@@ -34,19 +34,19 @@ internal class ImageContentReader(
             .AppendLine("- Do not include metadata, comments, or explanations.")
             .AppendLine("- If no text is found, return an empty string (\"\").")
             .AppendLine("- Maintain the original text order.");
-        var response = await chatClient.CompleteAsync([
+        var response = await chatClient.GetResponseAsync([
             new(ChatRole.User, [
                 new TextContent(sb.ToString()),
-                new ImageContent(dataUrl)
+                new DataContent(dataUrl, mimeType)
             ])], cancellationToken: cancellationToken);
         logger.LogDebug("Input token count: {InputTokenCount}", response.Usage?.InputTokenCount);
         logger.LogDebug("Output token count: {OutputTokenCount}", response.Usage?.OutputTokenCount);
-        if (string.IsNullOrEmpty(response.Message.Text))
+        if (string.IsNullOrEmpty(response.Text))
         {
             logger.LogError("Response is empty");
             return null;
         }
-        var responseMessage = Regex.Replace(response.Message.Text, @"^\s*```plaintext\s*|\s*```\s*$", string.Empty, RegexOptions.None, TimeSpan.FromMilliseconds(300));
+        var responseMessage = Regex.Replace(response.Text, @"^\s*```plaintext\s*|\s*```\s*$", string.Empty, RegexOptions.None, TimeSpan.FromMilliseconds(300));
         return responseMessage;
     }
 }

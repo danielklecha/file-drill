@@ -18,6 +18,7 @@ internal class ConfigSeedCommand() : Command("seed", "Fills \"Schemas\" section 
         public async Task<int> InvokeAsync(InvocationContext context)
         {
             WritableOptions optionsValue = options.Value;
+            optionsValue.Schemas ??= [];
             foreach (var sample in GetSamples())
                 optionsValue.Schemas.TryAdd(sample.Key, sample.Value);
             await optionsSync.SyncAsync(optionsValue);
