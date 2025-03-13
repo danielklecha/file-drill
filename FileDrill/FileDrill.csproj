@@ -17,7 +17,7 @@
 	<NeutralLanguage>en</NeutralLanguage>
 	<PackageLicenseExpression>MIT</PackageLicenseExpression>
 	<PackageRequireLicenseAcceptance>True</PackageRequireLicenseAcceptance>
-	<PackageId></PackageId>
+	<PackageId>file-drill</PackageId>
 	<PackageReadmeFile>README.md</PackageReadmeFile>
 	<FileVersion>1.0.0.0</FileVersion>
   </PropertyGroup>
