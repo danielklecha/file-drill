@@ -9,17 +9,17 @@
 	<ToolCommandName>file-drill</ToolCommandName>
 	<GeneratePackageOnBuild>False</GeneratePackageOnBuild>
 	<Authors>danielklecha</Authors>
-	<Description>dile-drill Command Line Interface</Description>
+	<Description>file-drill Command Line Interface</Description>
 	<Copyright>danielklecha</Copyright>
-	<PackageProjectUrl>https://github.com/danielklecha/FileDrill</PackageProjectUrl>
+	<PackageProjectUrl>https://github.com/danielklecha/file-drill</PackageProjectUrl>
 	<PackageIcon>icon.png</PackageIcon>
-	<RepositoryUrl>https://github.com/danielklecha/FileDrill</RepositoryUrl>
+	<RepositoryUrl>https://github.com/danielklecha/file-drill</RepositoryUrl>
 	<NeutralLanguage>en</NeutralLanguage>
 	<PackageLicenseExpression>MIT</PackageLicenseExpression>
 	<PackageRequireLicenseAcceptance>True</PackageRequireLicenseAcceptance>
 	<PackageId>file-drill</PackageId>
 	<PackageReadmeFile>README.md</PackageReadmeFile>
-	<FileVersion>1.0.0.0</FileVersion>
+	<Version>1.0.0.0</Version>
   </PropertyGroup>
 
   <ItemGroup>
