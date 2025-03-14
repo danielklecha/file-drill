@@ -2,6 +2,7 @@
 using FileDrill.Services;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Spectre.Console;
 using System;
 using System.Collections.Generic;
 using System.CommandLine;
@@ -25,6 +26,7 @@ internal class ReadExtractCommand : Command
 
     public new class Handler(
         ILogger<Handler> logger,
+        IAnsiConsole ansiConsole,
         IFileSystem fileSystem,
         IFileSystemDialogs fileSystemDialogs,
         IContentReaderService contentExtractorService,
@@ -47,13 +49,13 @@ internal class ReadExtractCommand : Command
             var watch = System.Diagnostics.Stopwatch.StartNew();
             try
             {
-                var content = await contentExtractorService.GetContentAsync(filePath, cancelationToken);
+                var content = await ansiConsole.Status().StartAsync("Reading file...", ctx => contentExtractorService.GetContentAsync(filePath, cancelationToken));
                 if (string.IsNullOrEmpty(content))
                 {
                     logger.LogError("Extracted content is empty");
                     return -1;
                 }   
-                var fields = await fieldExtractorService.ExtractFieldsAsync(content, Schema, cancelationToken);
+                var fields = await ansiConsole.Status().StartAsync("Extractiong fields...", ctx => fieldExtractorService.ExtractFieldsAsync(content, Schema, cancelationToken));
                 if (fields is null)
                 {
                     logger.LogError("Extracted field list is empty");

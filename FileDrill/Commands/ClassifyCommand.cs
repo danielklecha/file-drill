@@ -1,5 +1,7 @@
 ﻿using FileDrill.Services;
 using Microsoft.Extensions.Logging;
+using Spectre.Console.Extensions;
+using Spectre.Console;
 using System;
 using System.Collections.Generic;
 using System.CommandLine;
@@ -21,6 +23,7 @@ internal class ClassifyCommand : Command
 
     public new class Handler(
         ILogger<Handler> logger,
+        IAnsiConsole ansiConsole,
         IFileSystem fileSystem,
         IFileSystemDialogs fileSystemDialogs,
         IContentClassifierService contentClassifierService) : ICommandHandler
@@ -37,8 +40,8 @@ internal class ClassifyCommand : Command
             var watch = System.Diagnostics.Stopwatch.StartNew();
             try
             {
-                byte[] content = await fileSystem.File.ReadAllBytesAsync(filePath, cancelationToken);
-                var schema = await contentClassifierService.ClassifyAsync(content, filePath, cancelationToken);
+                byte[] content = await ansiConsole.Status().StartAsync("Reading file...", ctx => fileSystem.File.ReadAllBytesAsync(filePath, cancelationToken));
+                var schema = await ansiConsole.Status().StartAsync("Classifying content...", ctx => contentClassifierService.ClassifyAsync(content, filePath, cancelationToken));
                 if (string.IsNullOrEmpty(schema))
                 {
                     logger.LogInformation("Content type not detected");

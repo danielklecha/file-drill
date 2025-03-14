@@ -2,6 +2,7 @@
 using FileDrill.Services;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Spectre.Console;
 using System;
 using System.Collections.Generic;
 using System.CommandLine;
@@ -25,6 +26,7 @@ internal class ReadClassifyExtractCommand : Command
     public new class Handler(
         ILogger<Handler> logger,
         IFileSystem fileSystem,
+        IAnsiConsole ansiConsole,
         IFileSystemDialogs fileSystemDialogs,
         IContentReaderService contentExtractorService,
         IContentClassifierService contentClassifierService,
@@ -45,19 +47,19 @@ internal class ReadClassifyExtractCommand : Command
             var watch = System.Diagnostics.Stopwatch.StartNew();
             try
             {
-                var content = await contentExtractorService.GetContentAsync(filePath, cancelationToken);
+                var content = await ansiConsole.Status().StartAsync("Reading file...", ctx => contentExtractorService.GetContentAsync(filePath, cancelationToken));
                 if (string.IsNullOrEmpty(content))
                 {
                     return 0;
                 }
-                var schema = await contentClassifierService.ClassifyAsync(content, filePath, cancelationToken);
+                var schema = await ansiConsole.Status().StartAsync("Classifying content...", ctx => contentClassifierService.ClassifyAsync(content, filePath, cancelationToken));
                 if (string.IsNullOrEmpty(schema))
                 {
                     logger.LogInformation("Content type not detected");
                     return 0;
                 }
                 logger.LogInformation("Content type: {content type}", schema);
-                var fields = await fieldExtractorService.ExtractFieldsAsync(content, schema, cancelationToken);
+                var fields = await ansiConsole.Status().StartAsync("Extractiong fields...", ctx => fieldExtractorService.ExtractFieldsAsync(content, schema, cancelationToken));
                 var serialized = JsonSerializer.Serialize(fields, new JsonSerializerOptions()
                 {
                     WriteIndented = true

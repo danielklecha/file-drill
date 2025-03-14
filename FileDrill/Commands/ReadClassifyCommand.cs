@@ -3,6 +3,7 @@ using Microsoft.Extensions.Logging;
 using System.CommandLine.Invocation;
 using System.CommandLine;
 using System.IO.Abstractions;
+using Spectre.Console;
 
 namespace FileDrill.Commands;
 internal class ReadClassifyCommand : Command
@@ -17,6 +18,7 @@ internal class ReadClassifyCommand : Command
 
     public new class Handler(
         ILogger<Handler> logger,
+        IAnsiConsole ansiConsole,
         IFileSystem fileSystem,
         IFileSystemDialogs fileSystemDialogs,
         IContentReaderService contentExtractorService,
@@ -36,13 +38,13 @@ internal class ReadClassifyCommand : Command
             var watch = System.Diagnostics.Stopwatch.StartNew();
             try
             {
-                var content = await contentExtractorService.GetContentAsync(filePath, cancelationToken);
+                var content = await ansiConsole.Status().StartAsync("Reading file...", ctx => contentExtractorService.GetContentAsync(filePath, cancelationToken));
                 if (string.IsNullOrEmpty(content))
                 {
                     logger.LogInformation("Content not detected");
                     return 0;
                 }
-                var schema = await contentClassifierService.ClassifyAsync(content, filePath, cancelationToken);
+                var schema = await ansiConsole.Status().StartAsync("Classifying content...", ctx => contentClassifierService.ClassifyAsync(content, filePath, cancelationToken));
                 if (string.IsNullOrEmpty(schema))
                 {
                     logger.LogInformation("Content type not detected");

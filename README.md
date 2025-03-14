@@ -55,6 +55,7 @@ dotnet tool install --global file-drill
 | docx, dotx, docm, dotm | DocumentFormat.OpenXml |
 | png, jpeg | OCR using AI service |
 | rtf | RtfPipe |
+| eml, msg | MsgReader |
 
 ## Supported AI services
 | Service | Library |

@@ -2,6 +2,7 @@
 using FileDrill.Services;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Spectre.Console;
 using System;
 using System.Collections.Generic;
 using System.CommandLine;
@@ -26,6 +27,7 @@ internal class ReadCommand : Command
 
     public new class Handler(
         ILogger<Handler> logger,
+        IAnsiConsole ansiConsole,
         IFileSystem fileSystem,
         IFileSystemDialogs fileSystemDialogs,
         IContentReaderService contentExtractorService) : ICommandHandler
@@ -42,7 +44,7 @@ internal class ReadCommand : Command
             var watch = System.Diagnostics.Stopwatch.StartNew();
             try
             {
-                var content = await contentExtractorService.GetContentAsync(filePath, cancelationToken);
+                var content = await ansiConsole.Status().StartAsync("Reading file...", ctx => contentExtractorService.GetContentAsync(filePath, cancelationToken));
                 if (string.IsNullOrEmpty(content))
                 {
                     logger.LogInformation("Content not detected");
