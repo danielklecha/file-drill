@@ -9,7 +9,7 @@
 	<ToolCommandName>file-drill</ToolCommandName>
 	<GeneratePackageOnBuild>False</GeneratePackageOnBuild>
 	<Authors>danielklecha</Authors>
-	<Description>file-drill Command Line Interface</Description>
+	<Description>file-drill is a powerful command-line tool for reading, classifying, and extracting structured data from various file formats using both local processing and AI-powered services. It supports text documents, PDFs, images, and emails, allowing seamless automation of content analysis and data extraction.</Description>
 	<Copyright>danielklecha</Copyright>
 	<PackageProjectUrl>https://github.com/danielklecha/file-drill</PackageProjectUrl>
 	<PackageIcon>icon.png</PackageIcon>
