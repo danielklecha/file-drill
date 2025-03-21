@@ -15,6 +15,7 @@ internal class ConfigMergeCommand : Command
     {
         AddArgument(new Argument<string>("json", "json file or inline json"));
         AddCommand(new ConfigMergeKeyCommand());
+        AddCommand(new ConfigMergeWizardCommand());
     }
 
     public new class Handler(

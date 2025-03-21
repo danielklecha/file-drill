@@ -57,8 +57,10 @@ mindmap
       export
       set
         key
+        wizard
       merge
         key
+        wizard
       clear
       seed
     read

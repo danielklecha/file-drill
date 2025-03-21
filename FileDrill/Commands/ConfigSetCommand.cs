@@ -14,6 +14,7 @@ internal class ConfigSetCommand : Command
     {
         AddArgument(new Argument<string>("json", "json file or inline json"));
         AddCommand(new ConfigSetKeyCommand());
+        AddCommand(new ConfigSetWizardCommand());
     }
 
     public new class Handler(
