@@ -19,7 +19,7 @@ public static class AnsiConsoleExtensions
     }
 
 
-    public static async Task<object?> AskObjectAsync(this IAnsiConsole ansiConsole, Type type, string prompt, object? obj = default, CancellationToken cancellationToken = default)
+    public static async Task<object> AskObjectAsync(this IAnsiConsole ansiConsole, Type type, string prompt, object? obj = default, CancellationToken cancellationToken = default)
     {
         var method = (typeof(AnsiConsoleExtensions)
             .GetMethods(BindingFlags.Public | BindingFlags.Static).FirstOrDefault(x => x.Name.Equals(nameof(AskObjectAsync)) && x.IsGenericMethod)
@@ -27,7 +27,7 @@ public static class AnsiConsoleExtensions
         var task = (Task)method.Invoke(null, [ansiConsole, prompt, obj, cancellationToken])!;
         await task.ConfigureAwait(false);
         var resultProperty = task.GetType().GetProperty("Result");
-        return resultProperty?.GetValue(task);
+        return resultProperty?.GetValue(task) ?? throw new Exception("AskObjectAsync returned null");
     }
 
     public static async Task<T> AskObjectAsync<T>(this IAnsiConsole ansiConsole, string prompt, T? obj = default, CancellationToken cancellationToken = default) where T : class, new()
@@ -74,12 +74,31 @@ public static class AnsiConsoleExtensions
         return obj;
     }
 
+    public static async Task<object?> AskNullableObjectAsync(this IAnsiConsole ansiConsole, Type type, string prompt, object? obj = default, CancellationToken cancellationToken = default)
+    {
+        var method = (typeof(AnsiConsoleExtensions)
+             .GetMethods(BindingFlags.Public | BindingFlags.Static).FirstOrDefault(x => x.Name.Equals(nameof(AskNullableObjectAsync)) && x.IsGenericMethod)
+             ?? throw new InvalidOperationException("Could not find generic AskNullableObjectAsync method.")).MakeGenericMethod(type);
+        var task = (Task)method.Invoke(null, [ansiConsole, prompt, obj, cancellationToken])!;
+        await task.ConfigureAwait(false);
+        var resultProperty = task.GetType().GetProperty("Result");
+        return resultProperty?.GetValue(task);
+    }
+
+    public static async Task<T?> AskNullableObjectAsync<T>(this IAnsiConsole ansiConsole, string prompt, T? obj = default, CancellationToken cancellationToken = default) where T : class, new()
+    {
+        var choice = await ansiConsole.PromptAsync(new SelectionPrompt<string>().Title(prompt).AddChoices(["Set", "Set Null"]), cancellationToken: cancellationToken);
+        return choice == "Set"
+            ? await ansiConsole.AskObjectAsync<T>(prompt, obj, cancellationToken)
+            : default;
+    }
+
     public static async Task<object?> AskNullableAsync(this IAnsiConsole ansiConsole, Type type, string prompt, CancellationToken cancellationToken = default)
     {
         var method = typeof(AnsiConsoleExtensions).GetMethod("AskNullableAsync", [typeof(IAnsiConsole), typeof(string), typeof(CancellationToken)])
             ?? throw new InvalidOperationException("Method AskNullableAsync<T> not found.");
         var genericMethod = method.MakeGenericMethod(type);
-        var task = (Task?)genericMethod.Invoke(null, new object[] { ansiConsole, prompt, cancellationToken })
+        var task = (Task?)genericMethod.Invoke(null, [ansiConsole, prompt, cancellationToken])
             ?? throw new Exception("Method AskNullableAsync<T> doesn't return task.");
         await task.ConfigureAwait(false);
         var resultProperty = task.GetType().GetProperty("Result");
@@ -90,7 +109,7 @@ public static class AnsiConsoleExtensions
     {
         var type = typeof(T);
         if (type.IsClass && type != typeof(string))
-            return (T?)await ansiConsole.AskObjectAsync(type, prompt, default, cancellationToken);
+            return (T?)await ansiConsole.AskNullableObjectAsync(type, prompt, default, cancellationToken);
         if (!type.IsClass && Nullable.GetUnderlyingType(type) == null)
             return await ansiConsole.AskAsync<T>(prompt, cancellationToken);
         var choice = await ansiConsole.PromptAsync(new SelectionPrompt<string>().Title(prompt).AddChoices(["Set", "Set Null"]), cancellationToken: cancellationToken);
