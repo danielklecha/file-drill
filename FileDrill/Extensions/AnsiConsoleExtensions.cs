@@ -1,5 +1,7 @@
 ﻿using System.Collections;
+using System.Linq.Expressions;
 using System.Reflection;
+using System.Text.Json;
 using Humanizer;
 using Spectre.Console;
 
@@ -7,6 +9,33 @@ namespace FileDrill.Extensions;
 
 public static class AnsiConsoleExtensions
 {
+    static int DisplayNameLimit = 50;
+    static bool AllowSerializationForDisplayName = true;
+    static Assembly[]? AssembliesWithForcedInstances;
+    static Type[]? TypesWithForcedInstances;
+    static Assembly[]? AssembliesWithComplexObjects;
+    static Type[]? TypesWithComplexObjects;
+
+    public static void ConfigureDisplayName(int displayNameLimit = 50, bool allowSerializationForDisplayName = true)
+    {
+        if (displayNameLimit < 1)
+            throw new ArgumentException(null, nameof(displayNameLimit));
+        DisplayNameLimit = displayNameLimit;
+        AllowSerializationForDisplayName = allowSerializationForDisplayName;
+    }
+
+    public static void ConfigureForcedInstances(Type[]? typesWithForcedInstances = null, Assembly[]? assembliesWithForcedInstances = null)
+    {
+        TypesWithForcedInstances = typesWithForcedInstances;
+        AssembliesWithForcedInstances = assembliesWithForcedInstances;
+    }
+
+    public static void ConfigureComplexObjects(Type[]? typesWithComplexObjects = null, Assembly[]? assembliesWithComplexObjects = null)
+    {
+        TypesWithComplexObjects = typesWithComplexObjects;
+        AssembliesWithComplexObjects = assembliesWithComplexObjects;
+    }
+
     public static async Task<object> AskAsync(this IAnsiConsole ansiConsole, Type type, string prompt, CancellationToken cancellationToken = default)
     {
         var method = (typeof(Spectre.Console.AnsiConsoleExtensions)
@@ -40,16 +69,7 @@ public static class AnsiConsoleExtensions
             {
                 string propertyType = p.PropertyType.ToString();
                 object? propertyValue = p.GetValue(obj);
-                string? formattedPropertyValue = propertyValue switch
-                {
-                    null => "null",
-                    ICollection collection => $"{collection.Count} items",
-                    string stringValue => stringValue.Truncate(50),
-                    Enum enumValue => enumValue.ToString(),
-                    Uri uri => uri.OriginalString.Truncate(50),
-                    _ => "is set"
-                };
-                return ((PropertyInfo?)p, $"{p.Name}: {formattedPropertyValue}".EscapeMarkup());
+                return ((PropertyInfo?)p, $"{p.Name}: {ToFormattedString(propertyValue)}".EscapeMarkup());
             }).ToList();
             choices.Add((null, "Back"));
             (PropertyInfo? PropertyInfo, string DisplayName) selectedChoice = await ansiConsole.PromptAsync(
@@ -74,6 +94,39 @@ public static class AnsiConsoleExtensions
         return obj;
     }
 
+    private static string? ToFormattedString(object? obj)
+    {
+        switch(obj)
+        {
+            case null:
+                return "null";
+            case ICollection collection:
+                return $"{collection.Count} items";
+            case string stringValue:
+                return stringValue.Truncate(DisplayNameLimit);
+            case Enum enumValue:
+                return enumValue.ToString();
+            default:
+                var value = obj.ToString();
+                if (value is null)
+                    return "is set";
+                var typeFullName = obj.GetType().FullName;
+                if (typeFullName is null || !value.Equals(typeFullName))
+                    return value;
+                if (!AllowSerializationForDisplayName)
+                    return "is set";
+                try
+                {
+                    var serialized = JsonSerializer.Serialize(obj);
+                    return serialized.Truncate(DisplayNameLimit);
+                }
+                catch (Exception)
+                {
+                    return "is set";
+                }
+        }
+    }
+
     public static async Task<object?> AskNullableObjectAsync(this IAnsiConsole ansiConsole, Type type, string prompt, object? obj = default, CancellationToken cancellationToken = default)
     {
         var method = (typeof(AnsiConsoleExtensions)
@@ -87,6 +140,8 @@ public static class AnsiConsoleExtensions
 
     public static async Task<T?> AskNullableObjectAsync<T>(this IAnsiConsole ansiConsole, string prompt, T? obj = default, CancellationToken cancellationToken = default) where T : class, new()
     {
+        if (!CanBeNull(typeof(T)))
+            return await ansiConsole.AskObjectAsync<T>(prompt, obj, cancellationToken);
         var choice = await ansiConsole.PromptAsync(new SelectionPrompt<string>().Title(prompt).AddChoices(["Set", "Set Null"]), cancellationToken: cancellationToken);
         return choice == "Set"
             ? await ansiConsole.AskObjectAsync<T>(prompt, obj, cancellationToken)
@@ -108,9 +163,9 @@ public static class AnsiConsoleExtensions
     public static async Task<T?> AskNullableAsync<T>(this IAnsiConsole ansiConsole, string prompt, CancellationToken cancellationToken = default) //where T : new()
     {
         var type = typeof(T);
-        if (type.IsClass && type != typeof(string))
+        if (IsComplexObject(type))
             return (T?)await ansiConsole.AskNullableObjectAsync(type, prompt, default, cancellationToken);
-        if (!type.IsClass && Nullable.GetUnderlyingType(type) == null)
+        if (!CanBeNull(type))
             return await ansiConsole.AskAsync<T>(prompt, cancellationToken);
         var choice = await ansiConsole.PromptAsync(new SelectionPrompt<string>().Title(prompt).AddChoices(["Set", "Set Null"]), cancellationToken: cancellationToken);
         return choice == "Set"
@@ -135,7 +190,7 @@ public static class AnsiConsoleExtensions
     public static async Task<T?> AskNullableEnumAsync<T>(this IAnsiConsole ansiConsole, string prompt, CancellationToken cancellationToken = default) where T : Enum
     {
         var type = typeof(T);
-        if (Nullable.GetUnderlyingType(type) == null)
+        if (!CanBeNull(type))
             return await ansiConsole.AskEnumAsync<T>(prompt, cancellationToken);
         var choice = await ansiConsole.PromptAsync(new SelectionPrompt<string>().Title(prompt).AddChoices(["Set", "Set Null"]), cancellationToken: cancellationToken);
         return choice == "Set"
@@ -186,39 +241,59 @@ public static class AnsiConsoleExtensions
 
     public static async Task<T?> AskNullableListAsync<T>(this IAnsiConsole ansiConsole, string prompt, T? obj, CancellationToken cancellationToken = default) where T : IList, new()
     {
-        var elementType = typeof(T).IsGenericType ? typeof(T).GetGenericArguments()[0] : typeof(object);
+        var valueType = typeof(T).IsGenericType ? typeof(T).GetGenericArguments()[0] : typeof(object);
         while (true)
         {
-            var options = new List<string> { "Add" };
-            if (obj?.Count > 0)
+            var options = new List<(int Index, object? Key, string DisplayName)> { (-1, null, "Add") };
+            if (obj is not null && obj.Count > 0)
+                options.Add((-3, null, "Clear"));
+            if (CanBeNull(typeof(T)))
+                options.Add((-4, null, "Set Null"));
+            options.Add((-5, null, "Back"));
+            var values = obj?.Cast<object>().ToList() ?? [];
+            for (var i = 0; i < values.Count; i++)
             {
-                options.Add("Remove");
-                options.Add("Clear");
+                options.Add((i, values[i], $"[{i}]: {ToFormattedString(values[i])}".EscapeMarkup()));
             }
-            if (Nullable.GetUnderlyingType(typeof(T)) is not null)
-                options.Add("Set Null");
-            options.Add("Back");
-            var choice = await ansiConsole.PromptAsync(new SelectionPrompt<string>().Title(prompt).AddChoices(options), cancellationToken: cancellationToken);
-            switch (choice)
+            var choice = await ansiConsole.PromptAsync(new SelectionPrompt<(int Index, object? Key, string DisplayName)>()
+                    .Title(prompt)
+                    .UseConverter(x => x.DisplayName)
+                    .AddChoices(options), cancellationToken: cancellationToken);
+            switch (choice.Index)
             {
-                case "Back":
+                case -5:
                     return obj;
-                case "Add":
+                case -1:
                     obj ??= new();
-                    await ansiConsole.AskObjectAsync(elementType, "New value", cancellationToken);
+                    var value = await ansiConsole.AskNullableAsync(valueType, "New value", cancellationToken: cancellationToken);
+                    obj.Add(value);
                     break;
-                case "Remove" when obj is not null:
-                    var itemToRemove = await ansiConsole.PromptAsync(
-                        new SelectionPrompt<object>()
-                            .Title("Select value to remove:")
-                            .UseConverter(x => x.ToString().EscapeMarkup())
-                            .AddChoices(obj.Cast<object>().ToList()));
-                    obj.Remove(itemToRemove);
-                    break;
-                case "Set Null":
+                case -4:
                     return default;
-                case "Clear" when obj is not null:
+                case -3 when obj is not null:
                     obj.Clear();
+                    break;
+                default:
+                    var nestedOptions = new List<(int Index, string Key)> { (-1, "Set") };
+                    if (CanBeNull(valueType))
+                        nestedOptions.Add((-4, "Set Null"));
+                    nestedOptions.Add((-2, "Remove"));
+                    var nestedChoice = await ansiConsole.PromptAsync(new SelectionPrompt<(int Index, string Key)>()
+                        .Title(prompt)
+                        .UseConverter(x => x.Key)
+                        .AddChoices(nestedOptions), cancellationToken: cancellationToken);
+                    switch (nestedChoice.Index)
+                    {
+                        case -1 when obj is not null:
+                            obj[choice.Index] = await ansiConsole.AskNullableAsync(valueType, "New value", cancellationToken: cancellationToken);
+                            break;
+                        case -4 when obj is not null:
+                            obj[choice.Index] = GetDefault(valueType);
+                            break;
+                        case -2 when obj is not null:
+                            obj.Remove(choice.Key);
+                            break;
+                    }
                     break;
             }
         }
@@ -252,42 +327,93 @@ public static class AnsiConsoleExtensions
         var valueType = typeof(T).GetGenericArguments()[1];
         while (true)
         {
-            var options = new List<string> { "Add" };
+            var options = new List<(int Index, object? Key, string DisplayName)> { (-1, null, "Add") };
             if (obj is not null && obj.Count > 0)
-                options.Add("Remove");
-            options.Add("Clear");
-            if (Nullable.GetUnderlyingType(typeof(T)) is not null)
-                options.Add("Set Null");
-            options.Add("Back");
-
-            var choice = await ansiConsole.PromptAsync(new SelectionPrompt<string>()
-                    .Title(prompt)
-                    .AddChoices(options), cancellationToken: cancellationToken);
-            switch (choice)
+                options.Add((-3, null, "Clear"));
+            if (CanBeNull(typeof(T)))
+                options.Add((-4, null, "Set Null"));
+            options.Add((-5, null, "Back"));
+            var keys = obj?.Keys.Cast<object>().ToList() ?? [];
+            for (var i = 0; i < keys.Count; i++)
             {
-                case "Back":
+                options.Add((i, keys[i], $"[{i}]: {ToFormattedString(keys[i])}".EscapeMarkup()));
+            }
+
+            var choice = await ansiConsole.PromptAsync(new SelectionPrompt<(int Index, object? Key, string DisplayName)>()
+                    .Title(prompt)
+                    .UseConverter(x => x.DisplayName)
+                    .AddChoices(options), cancellationToken: cancellationToken);
+            switch (choice.Index)
+            {
+                case -5:
                     return obj;
-                case "Add":
+                case -1:
                     obj ??= new();
                     var key = await ansiConsole.AskAsync(keyType, "New key", cancellationToken: cancellationToken);
                     var value = await ansiConsole.AskNullableAsync(valueType, "New value", cancellationToken: cancellationToken);
                     obj.Add(key, value);
                     break;
-                case "Remove" when obj is not null:
-                    var itemToRemove = await ansiConsole.PromptAsync(
-                        new SelectionPrompt<object>()
-                            .Title("Select key to remove:")
-                            .UseConverter(x => x.ToString().EscapeMarkup())
-                            .AddChoices(obj.Keys.Cast<object>().ToList()));
-                    obj.Remove(itemToRemove);
-                    break;
-                case "Set Null":
+                case -4:
                     return default;
-                case "Clear" when obj is not null:
+                case -3 when obj is not null:
                     obj.Clear();
+                    break;
+                default:
+                    var nestedOptions = new List<(int Index, string Key)> { (-1, "Set") };
+                    if (CanBeNull(valueType))
+                        nestedOptions.Add((-4, "Set Null"));
+                    nestedOptions.Add((-2, "Remove"));
+                    var nestedChoice = await ansiConsole.PromptAsync(new SelectionPrompt<(int Index, string Key)>()
+                        .Title(prompt)
+                        .UseConverter(x => x.Key)
+                        .AddChoices(nestedOptions), cancellationToken: cancellationToken);
+                    switch(nestedChoice.Index)
+                    {
+                        case -1 when obj is not null:
+                            obj[choice.Index] = await ansiConsole.AskNullableAsync(valueType, "New value", cancellationToken: cancellationToken);
+                            break;
+                        case -4 when obj is not null:
+                            obj[choice.Index] = GetDefault(valueType);
+                            break;
+                        case -2 when obj is not null:
+                            obj.Remove(choice.Key);
+                            break;
+                    }
                     break;
             }
         }
+    }
+
+    private static object? GetDefault(Type type)
+    {
+        if (type.IsValueType)
+        {
+            var lambda = Expression.Lambda(Expression.Default(type));
+            return lambda.Compile().DynamicInvoke();
+        }
+        return null;
+    }
+
+    private static bool CanBeNull(Type type)
+    {
+        if (!type.IsClass && Nullable.GetUnderlyingType(type) == null)
+            return false;
+        if (TypesWithForcedInstances?.Any(t => t == type || t.IsAssignableFrom(type)) ?? false)
+            return false;
+        if (AssembliesWithForcedInstances?.Contains(type.Assembly) ?? false)
+            return false;
+        return true;
+    }
+
+    private static bool IsComplexObject(Type type)
+    {
+        if (!type.IsClass)
+            return false;
+        if (TypesWithComplexObjects?.Any(t => t == type || t.IsAssignableFrom(type)) ?? false)
+            return true;
+        if (AssembliesWithComplexObjects?.Contains(type.Assembly) ?? false)
+            return true;
+        return false;
     }
 
     public static async Task<T> AskDictionaryAsync<T>(this IAnsiConsole ansiConsole, string prompt, T? obj, CancellationToken cancellationToken = default) where T : IDictionary, new()

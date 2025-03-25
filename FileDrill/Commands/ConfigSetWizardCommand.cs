@@ -20,6 +20,8 @@ internal class ConfigSetWizardCommand() : Command("wizard", "Replaces configurat
 
         public async Task<int> InvokeAsync(InvocationContext context)
         {
+            Extensions.AnsiConsoleExtensions.ConfigureForcedInstances([typeof(System.Collections.ICollection)], [GetType().Assembly]);
+            Extensions.AnsiConsoleExtensions.ConfigureComplexObjects(null, [GetType().Assembly]);
             var optionsValue = await ansiConsole.AskObjectAsync<WritableOptions>("New settings");
             await optionsSync.SyncAsync(optionsValue);
             await optionsSync.SaveAsync();

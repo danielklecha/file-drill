@@ -21,6 +21,8 @@ internal class ConfigMergeWizardCommand() : Command("wizard", "Replaces configur
 
         public async Task<int> InvokeAsync(InvocationContext context)
         {
+            Extensions.AnsiConsoleExtensions.ConfigureForcedInstances([typeof(System.Collections.ICollection)], [GetType().Assembly]);
+            Extensions.AnsiConsoleExtensions.ConfigureComplexObjects(null, [GetType().Assembly]);
             var optionsValue = options.Value;
             optionsValue = await ansiConsole.AskObjectAsync("New settings", optionsValue);
             await optionsSync.SyncAsync(optionsValue);
