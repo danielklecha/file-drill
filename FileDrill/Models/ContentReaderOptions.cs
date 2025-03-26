@@ -10,4 +10,5 @@ public class ContentReaderOptions
 {
     public string? AIService { get; set; }
     public bool AttachProperties { get; set; }
+    public int? Limit { get; set; }
 }

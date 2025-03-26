@@ -1,9 +1,13 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using FileDrill.Models;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace FileDrill.Services;
+
 public class ContentReaderService(
     ILogger<ContentReaderService> logger,
     System.IO.Abstractions.IFileSystem fileSystem,
+    IOptions<WritableOptions> options,
     IEnumerable<IContentReader> extractors) : IContentReaderService
 {
     public async Task<string?> GetContentAsync(string path, CancellationToken cancellationToken = default)
@@ -18,7 +22,15 @@ public class ContentReaderService(
                 logger.LogDebug("Unable to find extractor for this file type");
                 return null;
             }
-            return await extractor.GetContentAsync(path, cancellationToken);
+            var content = await extractor.GetContentAsync(path, cancellationToken);
+            var optionsValue = options.Value;
+            var limit = optionsValue.ContentReader?.Limit;
+            if (limit.HasValue && content is not null && content.Length > limit.Value)
+            {
+                content = content[..limit.Value];
+                logger.LogWarning("Content length exceeded the limit. Characters beyond the limit have been truncated.");
+            }
+            return content;
         }
         finally
         {
