@@ -9,31 +9,59 @@ namespace FileDrill.Extensions;
 
 public static class AnsiConsoleExtensions
 {
-    static int DisplayNameLimit = 50;
-    static bool AllowSerializationForDisplayName = true;
-    static Assembly[]? AssembliesWithForcedInstances;
-    static Type[]? TypesWithForcedInstances;
-    static Assembly[]? AssembliesWithComplexObjects;
-    static Type[]? TypesWithComplexObjects;
+    static int displayNameLimit = 50;
+    static bool allowSerializationForDisplayName = true;
+    static Assembly[]? assembliesWithForcedInstances;
+    static Type[]? typesWithForcedInstances;
+    static Assembly[]? assembliesWithComplexObjects;
+    static Type[]? typesWithComplexObjects;
 
+    /// <summary>
+    /// Configures the display name limit and serialization option.
+    /// </summary>
+    /// <param name="displayNameLimit">The maximum length for display names. Must be greater than 0.</param>
+    /// <param name="allowSerializationForDisplayName">Whether to allow serialization for display names.</param>
     public static void ConfigureDisplayName(int displayNameLimit = 50, bool allowSerializationForDisplayName = true)
     {
         if (displayNameLimit < 1)
-            throw new ArgumentException(null, nameof(displayNameLimit));
-        DisplayNameLimit = displayNameLimit;
-        AllowSerializationForDisplayName = allowSerializationForDisplayName;
+            throw new ArgumentException("Display name limit must be greater than 0.", nameof(displayNameLimit));
+        AnsiConsoleExtensions.displayNameLimit = displayNameLimit;
+        AnsiConsoleExtensions.allowSerializationForDisplayName = allowSerializationForDisplayName;
     }
 
+    /// <summary>
+    /// Configures assemblies and types with forced instances.
+    /// </summary>
+    /// <param name="typesWithForcedInstances">Types with forced instances.</param>
+    /// <param name="assembliesWithForcedInstances">Assemblies with forced instances.</param>
     public static void ConfigureForcedInstances(Type[]? typesWithForcedInstances = null, Assembly[]? assembliesWithForcedInstances = null)
     {
-        TypesWithForcedInstances = typesWithForcedInstances;
-        AssembliesWithForcedInstances = assembliesWithForcedInstances;
+        AnsiConsoleExtensions.typesWithForcedInstances = typesWithForcedInstances;
+        AnsiConsoleExtensions.assembliesWithForcedInstances = assembliesWithForcedInstances;
     }
 
+    /// <summary>
+    /// Configures assemblies and types with complex objects.
+    /// </summary>
+    /// <param name="typesWithComplexObjects">Types with complex objects.</param>
+    /// <param name="assembliesWithComplexObjects">Assemblies with complex objects.</param>
     public static void ConfigureComplexObjects(Type[]? typesWithComplexObjects = null, Assembly[]? assembliesWithComplexObjects = null)
     {
-        TypesWithComplexObjects = typesWithComplexObjects;
-        AssembliesWithComplexObjects = assembliesWithComplexObjects;
+        AnsiConsoleExtensions.typesWithComplexObjects = typesWithComplexObjects;
+        AnsiConsoleExtensions.assembliesWithComplexObjects = assembliesWithComplexObjects;
+    }
+
+    /// <summary>
+    /// Resets all configurations to their default values.
+    /// </summary>
+    public static void ResetConfigurations()
+    {
+        displayNameLimit = 50;
+        allowSerializationForDisplayName = true;
+        assembliesWithForcedInstances = null;
+        typesWithForcedInstances = null;
+        assembliesWithComplexObjects = null;
+        typesWithComplexObjects = null;
     }
 
     public static async Task<object> AskAsync(this IAnsiConsole ansiConsole, Type type, string prompt, CancellationToken cancellationToken = default)
@@ -103,7 +131,7 @@ public static class AnsiConsoleExtensions
             case ICollection collection:
                 return $"{collection.Count} items";
             case string stringValue:
-                return stringValue.Truncate(DisplayNameLimit);
+                return stringValue.Truncate(displayNameLimit);
             case Enum enumValue:
                 return enumValue.ToString();
             default:
@@ -113,12 +141,12 @@ public static class AnsiConsoleExtensions
                 var typeFullName = obj.GetType().FullName;
                 if (typeFullName is null || !value.Equals(typeFullName))
                     return value;
-                if (!AllowSerializationForDisplayName)
+                if (!allowSerializationForDisplayName)
                     return "is set";
                 try
                 {
                     var serialized = JsonSerializer.Serialize(obj);
-                    return serialized.Truncate(DisplayNameLimit);
+                    return serialized.Truncate(displayNameLimit);
                 }
                 catch (Exception)
                 {
@@ -398,9 +426,9 @@ public static class AnsiConsoleExtensions
     {
         if (!type.IsClass && Nullable.GetUnderlyingType(type) == null)
             return false;
-        if (TypesWithForcedInstances?.Any(t => t == type || t.IsAssignableFrom(type)) ?? false)
+        if (typesWithForcedInstances?.Any(t => t == type || t.IsAssignableFrom(type)) ?? false)
             return false;
-        if (AssembliesWithForcedInstances?.Contains(type.Assembly) ?? false)
+        if (assembliesWithForcedInstances?.Contains(type.Assembly) ?? false)
             return false;
         return true;
     }
@@ -409,9 +437,9 @@ public static class AnsiConsoleExtensions
     {
         if (!type.IsClass)
             return false;
-        if (TypesWithComplexObjects?.Any(t => t == type || t.IsAssignableFrom(type)) ?? false)
+        if (typesWithComplexObjects?.Any(t => t == type || t.IsAssignableFrom(type)) ?? false)
             return true;
-        if (AssembliesWithComplexObjects?.Contains(type.Assembly) ?? false)
+        if (assembliesWithComplexObjects?.Contains(type.Assembly) ?? false)
             return true;
         return false;
     }
