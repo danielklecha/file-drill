@@ -41,5 +41,5 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
-        version=$(echo "${{ github.ref_name }}" | sed 's/^v//')
-        gh release create "$tag" --generate-notes --notes "NuGet Package: https://www.nuget.org/packages/file-drill/$version"
+        tag=${{ github.ref_name }}
+        gh release create "$tag" --generate-notes
