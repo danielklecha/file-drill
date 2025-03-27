@@ -19,8 +19,8 @@ jobs:
 
     - name: Replace Version in csproj files
       run: |
-        tag=$(echo "${{ github.ref_name }}" | sed 's/^v//')
-        find . -type f -name "*.csproj" -exec sed -i "s/<Version>.*<\/Version>/<Version>${tag}<\/Version>/g" {} \;
+        version=$(echo "${{ github.ref_name }}" | sed 's/^v//')
+        find . -type f -name "*.csproj" -exec sed -i "s/<Version>.*<\/Version>/<Version>${version}<\/Version>/g" {} \;
 
     - name: Restore dependencies
       run: dotnet restore
@@ -41,5 +41,5 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
-        tag=${{ github.ref_name }}
-        gh release create "$tag" --generate-notes
+        version=$(echo "${{ github.ref_name }}" | sed 's/^v//')
+        gh release create "$tag" --generate-notes --notes "NuGet Package: https://www.nuget.org/packages/file-drill/$version"
