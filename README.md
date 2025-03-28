@@ -4,7 +4,7 @@
 [![NuGet downloads](https://img.shields.io/nuget/dt/file-drill.svg)](https://www.nuget.org/packages/file-drill)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](https://github.com/danielklecha/SharpIppNext/blob/master/LICENSE.txt)
 
-**file-drill** is a powerful tool designed for processing file content using both local code and AI-based services. It enables users to:
+**file-drill** is a powerful tool designed for processing file content using both local code and AI-based services.
 
 ## Features
 
@@ -14,7 +14,7 @@
 
 ## Installation
 
-Install the tool using command:
+Install the tool using the command:
 
 ```powershell
 dotnet tool install --global file-drill
