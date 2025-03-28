@@ -1,2 +1,6 @@
-dotnet tool uninstall --global file-drill
-Read-Host -Prompt "Press Enter to exit..."
+try {
+	dotnet tool uninstall --global file-drill
+}
+finally {
+	Read-Host -Prompt "Press Enter to exit..."
+}

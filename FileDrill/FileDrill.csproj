@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
@@ -23,23 +23,23 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="DocumentFormat.OpenXml" Version="3.3.0" />
-    <PackageReference Include="HtmlAgilityPack" Version="1.12.0" />
-    <PackageReference Include="Microsoft.Extensions.AI" Version="9.3.0-preview.1.25161.3" />
-    <PackageReference Include="Microsoft.Extensions.AI.Abstractions" Version="9.3.0-preview.1.25161.3" />
-    <PackageReference Include="Microsoft.Extensions.AI.AzureAIInference" Version="9.3.0-preview.1.25161.3" />
-    <PackageReference Include="Microsoft.Extensions.AI.Ollama" Version="9.3.0-preview.1.25161.3" />
-    <PackageReference Include="Microsoft.Extensions.AI.OpenAI" Version="9.3.0-preview.1.25161.3" />
-    <PackageReference Include="MimeTypesMap" Version="1.0.9" />
-    <PackageReference Include="Mscc.GenerativeAI.Microsoft" Version="2.3.4" />
-    <PackageReference Include="MsgReader" Version="5.7.2" />
-    <PackageReference Include="OllamaSharp" Version="5.1.4" />
-    <PackageReference Include="PdfPig" Version="0.1.11-alpha-20250310-204f4" />
-    <PackageReference Include="PdfPig.Rendering.Skia" Version="0.1.10.2-alpha003" />
-    <PackageReference Include="RtfPipe" Version="2.0.7677.4303" />
-    <PackageReference Include="Spectre.Console" Version="0.49.2-preview.0.76" />
-    <PackageReference Include="System.CommandLine.Hosting" Version="0.4.0-alpha.22272.1" />
-    <PackageReference Include="System.IO.Abstractions" Version="22.0.11" />
+    <PackageReference Include="DocumentFormat.OpenXml" />
+    <PackageReference Include="HtmlAgilityPack" />
+    <PackageReference Include="Microsoft.Extensions.AI" />
+    <PackageReference Include="Microsoft.Extensions.AI.Abstractions" />
+    <PackageReference Include="Microsoft.Extensions.AI.AzureAIInference" />
+    <PackageReference Include="Microsoft.Extensions.AI.Ollama" />
+    <PackageReference Include="Microsoft.Extensions.AI.OpenAI" />
+    <PackageReference Include="MimeTypesMap" />
+    <PackageReference Include="Mscc.GenerativeAI.Microsoft" />
+    <PackageReference Include="MsgReader" />
+    <PackageReference Include="OllamaSharp" />
+    <PackageReference Include="PdfPig" />
+    <PackageReference Include="PdfPig.Rendering.Skia" />
+    <PackageReference Include="RtfPipe" />
+    <PackageReference Include="Spectre.Console" />
+    <PackageReference Include="System.CommandLine.Hosting" />
+    <PackageReference Include="System.IO.Abstractions" />
   </ItemGroup>
 
   <ItemGroup>
