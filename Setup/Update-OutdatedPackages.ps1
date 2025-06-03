@@ -1,3 +1,7 @@
+﻿param (
+    [switch]$WhatIf
+)
+
 Push-Location "$PSScriptRoot\.."
 
 # Run dotnet list package to get outdated package versions
@@ -15,6 +19,8 @@ foreach ($project in $parsedJson.projects) {
                 $packageVersions[$package.id] = [PSCustomObject]@{
                     resolvedVersion = $package.resolvedVersion
                     latestVersion   = if ($package.latestVersion -match "(?i)not found") { "" } else { $package.latestVersion }
+                    isPrerelease    = $false
+                    isNew           = $false
                     isUpdated       = $false
                 }
             }
@@ -32,6 +38,7 @@ if ($packageVersions.Values.Where({ $_.latestVersion -eq "" }).Count -gt 0) {
             foreach ($package in $framework.topLevelPackages + $framework.transitivePackages) {
                 if ($packageVersions.ContainsKey($package.id) -and $packageVersions[$package.id].latestVersion -eq "") {
                     $packageVersions[$package.id].latestVersion = $package.latestVersion
+                    $packageVersions[$package.id].isPrerelease = $true
                 }
             }
         }
@@ -69,21 +76,27 @@ foreach ($packageId in $packageVersions.Keys) {
         $newPackage.SetAttribute("Include", $packageId)
         $newPackage.SetAttribute("Version", $packageVersions[$packageId].latestVersion)
         $xml.Project.ItemGroup.AppendChild($newPackage) | Out-Null
-        $packageVersions[$packageId].isUpdated = $true
+        $packageVersions[$packageId].isNew = $true
     }
 }
-
-# Save the modified XML file
-$xml.Save($xmlFilePath)
 
 # Output the dictionary as a table
 $packageVersions.GetEnumerator() | ForEach-Object {
     [PSCustomObject]@{
         "Package ID"      = $_.Key
-        "Resolved Version" = $_.Value.resolvedVersion
-        "Latest Version"   = $_.Value.latestVersion
-        "Is Updated"       = $_.Value.isUpdated
+        "Resolved Version"  = $_.Value.resolvedVersion
+        "Latest Version"    = $_.Value.latestVersion
+        "New"               = if ($_.Value.isNew) { "✓" } else { "" }
+        "Update"            = if ($_.Value.isUpdated) { "✓" } else { "" }
+        "Is Prerelease"     = if ($_.Value.isPrerelease) { "✓" } else { "" }
     }
 } | Format-Table -AutoSize
+
+# Save the modified XML file if -WhatIf is not specified
+if (-not $WhatIf) {
+    $xml.Save($xmlFilePath)
+} else {
+    Write-Host "Changes not saved due to -WhatIf parameter."
+}
 
 Pop-Location
