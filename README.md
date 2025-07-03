@@ -41,10 +41,11 @@ dotnet tool install --global file-drill
     file-drill config show
     ```
 
-4. Extract data from file.
+4. Extract data from file or extract and save results.
 
     ```powershell
-    file-drill read classify extract c:\invoice.pdf
+    file-drill read classify extract --file .\invoice.pdf
+    file-drill read classify extract --file .\invoice.pdf --out .\invoice.json
     ```
 
 ## Diagram of commands
