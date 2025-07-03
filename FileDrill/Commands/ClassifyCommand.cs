@@ -1,7 +1,7 @@
 ﻿using FileDrill.Services;
 using Microsoft.Extensions.Logging;
-using Spectre.Console.Extensions;
 using Spectre.Console;
+using Spectre.Console.Extensions;
 using System;
 using System.Collections.Generic;
 using System.CommandLine;
@@ -9,6 +9,7 @@ using System.CommandLine.Invocation;
 using System.IO.Abstractions;
 using System.Linq;
 using System.Text;
+using System.Text.Json;
 using System.Threading.Tasks;
 
 namespace FileDrill.Commands;
@@ -18,6 +19,7 @@ internal class ClassifyCommand : Command
     {
         AddAlias("c");
         AddOption(new Option<string>("--file", "File path"));
+        AddOption(new Option<string>("--out", "output path"));
         AddCommand(new ReadClassifyExtractCommand());
     }
 
@@ -29,7 +31,11 @@ internal class ClassifyCommand : Command
         IContentClassifierService contentClassifierService) : ICommandHandler
     {
         public string? File { get; set; }
+
+        public string? Out { get; set; }
+
         public int Invoke(InvocationContext context) => 0;
+
         public async Task<int> InvokeAsync(InvocationContext context)
         {
             var cancelationToken = context.GetCancellationToken();
@@ -45,9 +51,22 @@ internal class ClassifyCommand : Command
                 if (string.IsNullOrEmpty(schema))
                 {
                     logger.LogInformation("Content type not detected");
-                    return 0;
+                    return -1;
                 }
-                logger.LogInformation("Content type: {content type}", schema);
+                var data = new
+                {
+                    Schema = schema
+                };
+                var serialized = JsonSerializer.Serialize(data, new JsonSerializerOptions()
+                {
+                    WriteIndented = true
+                });
+                logger.LogInformation(serialized);
+                if (!string.IsNullOrEmpty(Out))
+                {
+                    fileSystem.File.WriteAllText(Out, serialized);
+                    logger.LogInformation("Scehma has been saved to {path}", Out);
+                }
             }
             finally
             {

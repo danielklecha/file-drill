@@ -1,9 +1,10 @@
 ﻿using FileDrill.Services;
 using Microsoft.Extensions.Logging;
-using System.CommandLine.Invocation;
-using System.CommandLine;
-using System.IO.Abstractions;
 using Spectre.Console;
+using System.CommandLine;
+using System.CommandLine.Invocation;
+using System.IO.Abstractions;
+using System.Text.Json;
 
 namespace FileDrill.Commands;
 internal class ReadClassifyCommand : Command
@@ -42,18 +43,26 @@ internal class ReadClassifyCommand : Command
                 if (string.IsNullOrEmpty(content))
                 {
                     logger.LogInformation("Content not detected");
-                    return 0;
+                    return -1;
                 }
                 var schema = await ansiConsole.Status().StartAsync("Classifying content...", ctx => contentClassifierService.ClassifyAsync(content, filePath, cancelationToken));
                 if (string.IsNullOrEmpty(schema))
                 {
                     logger.LogInformation("Content type not detected");
-                    return 0;
+                    return -1;
                 }
-                logger.LogInformation("Content type: {content type}", schema);
+                var data = new
+                {
+                    Schema = schema
+                };
+                var serialized = JsonSerializer.Serialize(data, new JsonSerializerOptions()
+                {
+                    WriteIndented = true
+                });
+                logger.LogInformation(serialized);
                 if (!string.IsNullOrEmpty(Out))
                 {
-                    fileSystem.File.WriteAllText(Out, schema);
+                    fileSystem.File.WriteAllText(Out, serialized);
                     logger.LogInformation("Scehma has been saved to {path}", Out);
                 }
             }

@@ -50,24 +50,29 @@ internal class ReadClassifyExtractCommand : Command
                 var content = await ansiConsole.Status().StartAsync("Reading file...", ctx => contentExtractorService.GetContentAsync(filePath, cancelationToken));
                 if (string.IsNullOrEmpty(content))
                 {
-                    return 0;
+                    return -1;
                 }
                 var schema = await ansiConsole.Status().StartAsync("Classifying content...", ctx => contentClassifierService.ClassifyAsync(content, filePath, cancelationToken));
                 if (string.IsNullOrEmpty(schema))
                 {
                     logger.LogInformation("Content type not detected");
-                    return 0;
+                    return -1;
                 }
                 logger.LogInformation("Content type: {content type}", schema);
                 var fields = await ansiConsole.Status().StartAsync("Extractiong fields...", ctx => fieldExtractorService.ExtractFieldsAsync(content, schema, cancelationToken));
-                var serialized = JsonSerializer.Serialize(fields, new JsonSerializerOptions()
+                var data = new
+                {
+                    Schema = schema,
+                    Fields = fields
+                };
+                var serialized = JsonSerializer.Serialize(data, new JsonSerializerOptions()
                 {
                     WriteIndented = true
                 });
                 logger.LogInformation(serialized);
                 if (!string.IsNullOrEmpty(Out))
                 {
-                    await fileSystem.File.AppendAllTextAsync(Out, serialized);
+                    await fileSystem.File.WriteAllTextAsync(Out, serialized);
                     logger.LogInformation("Fields have been saved to {path}", Out);
                 }
             }

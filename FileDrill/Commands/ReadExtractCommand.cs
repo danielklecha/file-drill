@@ -67,7 +67,7 @@ internal class ReadExtractCommand : Command
                 });
                 if (!string.IsNullOrEmpty(Out))
                 {
-                    await fileSystem.File.AppendAllTextAsync(Out, serialized);
+                    await fileSystem.File.WriteAllTextAsync(Out, serialized);
                     logger.LogInformation("Fields have been saved to {path}", Out);
                 }
                 else
